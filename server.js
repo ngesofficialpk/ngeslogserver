@@ -19,20 +19,25 @@ app.post('/log', (req, res) => {
   }
 });
 
-// GET /logs — return all logs as text
+// GET /logs — return all logs as plain text
 app.get('/logs', (req, res) => {
-  if (fs.existsSync(LOG_FILE)) {
+  try {
+    if (!fs.existsSync(LOG_FILE)) {
+      fs.writeFileSync(LOG_FILE, '');
+    }
     const logs = fs.readFileSync(LOG_FILE, 'utf8');
     res.type('text/plain').send(logs);
-  } else {
-    res.status(404).send('No logs found');
+  } catch (err) {
+    console.error('Failed to read logs:', err);
+    res.status(500).send('Error reading logs');
   }
 });
 
-// Root route
+// GET / — test route
 app.get('/', (req, res) => {
   res.send('Log Server is Running');
 });
 
+// Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));

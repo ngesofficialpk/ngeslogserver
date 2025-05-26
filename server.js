@@ -5,15 +5,21 @@ const app = express();
 
 app.use(express.json());
 
-const LOG_FILE = path.join(__dirname, 'logs.txt');
+const LOG_FILE = path.join('/tmp', 'logs.txt'); // Use /tmp for Railway compatibility
 
 // POST /log — receive and store logs
 app.post('/log', (req, res) => {
   const logLine = req.body.log;
+
   if (logLine) {
-    console.log(`[LOG] ${logLine}`);
-    fs.appendFileSync(LOG_FILE, logLine + '\n');
-    res.status(200).send('Received');
+    try {
+      console.log(`[LOG] ${logLine}`);
+      fs.appendFileSync(LOG_FILE, logLine + '\n');
+      res.status(200).send('Received');
+    } catch (err) {
+      console.error('❌ Error writing to log file:', err);
+      res.status(500).send('Failed to write log');
+    }
   } else {
     res.status(400).send('Missing "log" in body');
   }
@@ -28,7 +34,7 @@ app.get('/logs', (req, res) => {
     const logs = fs.readFileSync(LOG_FILE, 'utf8');
     res.type('text/plain').send(logs);
   } catch (err) {
-    console.error('Failed to read logs:', err);
+    console.error('❌ Failed to read logs:', err);
     res.status(500).send('Error reading logs');
   }
 });
@@ -40,4 +46,4 @@ app.get('/', (req, res) => {
 
 // Start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server listening on port ${PORT}`));

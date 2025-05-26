@@ -3,17 +3,17 @@ const fs = require('fs');
 const path = require('path');
 const app = express();
 
-// Accept both raw text and JSON
-app.use(express.text({ type: '*/*' }));
-app.use(express.json());
+// Increase body size limit to handle large CS2 logs
+app.use(express.text({ type: '*/*', limit: '50mb' }));
+app.use(express.json({ limit: '50mb' }));
 
-const LOG_FILE = path.join('/tmp', 'logs.txt'); // Railway-safe write path
+const LOG_FILE = path.join('/tmp', 'logs.txt'); // Railway-compatible path
 
 // POST /log — receive and store logs
 app.post('/log', (req, res) => {
   let logLine = req.body?.log;
 
-  // Fallback for raw text (e.g., from Valve/Steam HTTP client)
+  // Fallback: raw text body
   if (!logLine && typeof req.body === 'string') {
     logLine = req.body;
   }
@@ -24,11 +24,11 @@ app.post('/log', (req, res) => {
       fs.appendFileSync(LOG_FILE, logLine + '\n');
       res.status(200).send('Received');
     } catch (err) {
-      console.error('❌ Error writing to log file:', err);
+      console.error(' Error writing to log file:', err);
       res.status(500).send('Failed to write log');
     }
   } else {
-    console.error('❌ Invalid log format:', req.body);
+    console.error(' Invalid log format:', req.body);
     res.status(400).send('Missing "log" in body');
   }
 });
@@ -42,7 +42,7 @@ app.get('/logs', (req, res) => {
     const logs = fs.readFileSync(LOG_FILE, 'utf8');
     res.type('text/plain').send(logs);
   } catch (err) {
-    console.error('❌ Failed to read logs:', err);
+    console.error(' Failed to read logs:', err);
     res.status(500).send('Error reading logs');
   }
 });
@@ -54,4 +54,4 @@ app.get('/', (req, res) => {
 
 // Start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server listening on port ${PORT}`));
+app.listen(PORT, () => console.log(` Server listening on port ${PORT}`));

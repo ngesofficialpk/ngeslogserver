@@ -3,13 +3,20 @@ const fs = require('fs');
 const path = require('path');
 const app = express();
 
+// Accept both raw text and JSON
+app.use(express.text({ type: '*/*' }));
 app.use(express.json());
 
-const LOG_FILE = path.join('/tmp', 'logs.txt'); // Use /tmp for Railway compatibility
+const LOG_FILE = path.join('/tmp', 'logs.txt'); // Railway-safe write path
 
 // POST /log — receive and store logs
 app.post('/log', (req, res) => {
-  const logLine = req.body.log;
+  let logLine = req.body?.log;
+
+  // Fallback for raw text (e.g., from Valve/Steam HTTP client)
+  if (!logLine && typeof req.body === 'string') {
+    logLine = req.body;
+  }
 
   if (logLine) {
     try {
@@ -21,6 +28,7 @@ app.post('/log', (req, res) => {
       res.status(500).send('Failed to write log');
     }
   } else {
+    console.error('❌ Invalid log format:', req.body);
     res.status(400).send('Missing "log" in body');
   }
 });
